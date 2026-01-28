@@ -26,6 +26,8 @@ temp_video/
 data/
 docs/
 others/
+
+**/raw_setup/
 # 忽略特定的 Office 临时文件和混乱命名的 docx
 *.docx
 *.pdf
