@@ -5,6 +5,7 @@ FOLDER_COMMENTS = {
     "src": "核心代码库：所有 核心代码逻辑 的集合",
     "src/vision": "视觉模块：负责液滴识别、轨迹追踪",
     "src/control": "控制逻辑:PID 计算与指令生成",
+    "src/_old_code": "历史代码：存放旧版本代码以备查阅",
     "drivers": "硬件驱动库：屏蔽底层通讯细节",
     "drivers/arduino": "下位机:Arduino 固件源码",
     "drivers/raw_setup": "环境依赖:存放本地(由硬件自带的)驱动, Git 暂不追踪",
