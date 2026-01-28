@@ -1,0 +1,33 @@
+Galinstan_Control_System/
+│
+├── .git/                  # [隐藏] Git仓库核心
+├── .gitignore             # 过滤清单
+├── README.md              # 项目说明书
+│
+├── src/                   # [Source] 核心源代码
+│   ├── vision/            # 视觉模块 (Python)
+│   │   ├── __init__.py
+│   │   ├── detector.py    # 图像识别算法
+│   │   └── calibrator.py  # 标定逻辑
+│   ├── control/           # 控制逻辑 (Python/PID)
+│   │   ├── pid_logic.py
+│   │   └── serial_comm.py # 串口通信封装
+│   ├── embedded/          # 下位机代码 (Arduino/C++)
+│   │   └── droplet_driver.ino
+│   └── analysis/          # 数据后处理脚本 (画图、拟合)
+│       └── plot_trajectory.py
+│
+├── data/                  # [Data] 实验数据
+│   ├── raw/               # 原始数据 (只读，永不修改)
+│   │   ├── 20250729_pure_galinstan/  # 迁移原本的中文文件夹
+│   │   └── 20260128_test_run_01/
+│   └── processed/         # 清洗后的数据、生成的图表
+│
+├── docs/                  # [Docs] 文档与推导
+│   ├── physics_derivation.md  # 物理推导笔记
+│   ├── hardware_schematic.png # 电路接线图
+│   └── protocol_manual.md     # 实验操作流程
+│
+└── tests/                 # [Tests] 测试脚本
+    ├── test_camera.py     # 单独测试摄像头的脚本
+    └── test_arduino.py    # 单独测试串口的脚本

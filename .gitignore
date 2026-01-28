@@ -1,0 +1,33 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境 (非常重要，不要上传几个GB的库文件)
+venv/
+env/
+.env
+
+# IDE 配置文件 (保护你的个人开发偏好)
+.vscode/
+.idea/
+
+# 操作系统生成的垃圾
+.DS_Store
+Thumbs.db
+
+# 项目特定的临时文件 (如抓拍的测试图片)
+# 除非你要把它们作为测试集，否则不要上传几十MB的视频/图片
+output_images/
+temp_video/
+*.log
+
+# 彻底忽略存放实验视频和文档的文件夹
+data/
+docs/
+others/
+# 忽略特定的 Office 临时文件和混乱命名的 docx
+*.docx
+*.pdf
+*.pptx
+*.rar
