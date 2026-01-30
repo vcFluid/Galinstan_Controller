@@ -1,7 +1,20 @@
-Above_All:
-①代码起始于2025年10月11日，于1月28日归档github
-②作为开源练手项目，仅提供源码，不提供实验数据
+# Above_All:
+1.I made these code at 2025_10_11, and upload them into github at 2026_1_28
+2.What I want to gain from this item is
+    2-1 Python learning.                                        ☆☆☆☆☆
+    2-2 The Physical mechanisms of liquid metals Galinstan.     ☆☆☆☆☆
+    2-3 Practise my academic English-expression.                ☆☆☆
+    2-4 Academic Norms.                                         ☆☆☆☆☆
+    2-5 How to use github to creat my personal repository       ☆☆
+    2-6 Software Engineering Architecture                       ☆☆☆
 
+# References:
+
+
+
+
+# The Complete code implementation ideas
+Please navigate to the folder Map_to_Aim 😉
 
 # 两个方向
 
