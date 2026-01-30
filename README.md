@@ -1,12 +1,19 @@
-# Above_All:
-1.I made these code at 2025_10_11, and upload them into github at 2026_1_28
-2.What I want to gain from this item is
-    2-1 Python learning.                                        ☆☆☆☆☆
-    2-2 The Physical mechanisms of liquid metals Galinstan.     ☆☆☆☆☆
-    2-3 Practise my academic English-expression.                ☆☆☆
-    2-4 Academic Norms.                                         ☆☆☆☆☆
-    2-5 How to use github to creat my personal repository       ☆☆
-    2-6 Software Engineering Architecture                       ☆☆☆
+## Project Overview (Above_All)
+
+**Timeline:**
+- **Created:** 2025-10-11
+- **Published:** 2026-01-28
+
+**Learning Objectives & Priorities:**
+1. **Python Proficiency**                       (☆☆☆☆☆)
+2. **Physics of Liquid Metals (Galinstan)**     (☆☆☆☆☆)
+   - Focus: Physical mechanisms and properties.
+3. **Academic Norms & Standards**               (☆☆☆☆☆)
+4. **Academic English Expression**              (☆☆☆)
+5. **Software Engineering Architecture**        (☆☆☆)
+6. **GitHub Repository Management**             (☆☆)
+
+
 
 # References:
 
