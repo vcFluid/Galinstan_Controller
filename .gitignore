@@ -40,3 +40,6 @@ others/
 
 # 与AI的交互日志和生成的文件
 ai_logs/
+
+# 忽略旧代码
+src/_old_code/
