@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# 忽略 Obsidian 的个人笔记文件夹，保护隐私
+/.obsidian
+.obsidian/workspace.json
+
 # 虚拟环境 (非常重要，不要上传几个GB的库文件)
 venv/
 env/
@@ -33,3 +37,6 @@ others/
 *.pdf
 *.pptx
 *.rar
+
+# 与AI的交互日志和生成的文件
+ai_logs/
