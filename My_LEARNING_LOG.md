@@ -75,6 +75,86 @@
 
 **环境既然已通，请立刻抛出你的旧代码。我们已经浪费了太多熵值在“修路”上，现在该“跑车”了。**
 
+
+# 3.
+
+## 动力底座：总结-环境配置复盘清单
+
+我们已经共同完成了从“物理磁盘”到“逻辑运行”的全链路打通。以下是你的“引擎”启动手册：
+
+|**环节**|**解决的物理阻力**|**最终状态**|
+|---|---|---|
+|**路径校准**|屏蔽 Windows Store 的“伪 Python”干扰|`python` 指令直接透传至 Anaconda|
+|**安全准入**|破解 PowerShell 的 `ExecutionPolicy` 限制|允许运行 `conda-hook` 自动化激活脚本|
+|**逻辑挂载**|将 VS Code 的解释器指针锁死在 `fluid` 环境|编辑器与运行环境实现“波粒二象性”的一致|
+|**持久化运行**|配置 `conda init` 与 `settings.json`|开启终端即自动进入 `(fluid)` 动力舱|
+
+---
+
+## 🛠️ Python 引擎底座施工详述
+
+### 1. 路径校准：排除“幻影指令”的劫持
+
+- **物理现象**：在终端输入 `python` 却弹出微软商店，或者提示找不到程序。
+    
+- **底层逻辑**：Windows 系统预装了名为 `python.exe` 的**执行别名（App Execution Aliases）**。这些别名其实是空壳（Shim），优先级极高，会先于你安装的 Anaconda 被系统识别。
+    
+- **详细操作**：
+    
+    1. 打开 Windows **设置** -> **应用** -> **高级应用设置** -> **应用执行别名**。
+        
+    2. 找到所有与 `Python.exe` 或 `Python3.exe` 相关的开关，全部拨至 **“关”**。
+        
+- **最终状态**：切断了系统层面的“干扰信号”，使终端在搜索 `python` 命令时，能够直接穿透到你的 Anaconda 物理路径。
+    
+
+### 2. 安全准入：打通脚本自动化的“阀门”
+
+- **物理现象**：终端报错 `UnauthorizedAccess`，提示禁止运行脚本。
+    
+- **底层逻辑**：PowerShell 默认的执行策略（Execution Policy）是 `Restricted`，它不允许加载任何配置文件（如 `profile.ps1`）。Conda 环境的自动激活依赖于加载 `conda-hook.ps1`，因此被系统安保逻辑物理拦截。
+    
+- **详细操作**：
+    
+    1. 以 **管理员身份** 启动 PowerShell。
+        
+    2. 执行：`Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`。
+        
+    3. 输入 `Y` 确认。
+        
+- **最终状态**：赋予了本地脚本（如环境激活脚本）运行权限。这相当于在实验室门口登记了准入证，让 Conda 的自动化配置能够顺利加载。
+    
+
+### 3. 逻辑挂载：编辑器与环境的“相干性”对准
+
+- **物理现象**：代码里 `import cv2` 报错，尽管你已经安装了它。
+    
+- **底层逻辑**：VS Code 的**静态分析引擎（Pylance）**与**后端运行环境**是解耦的。如果 VS Code 的指针指向了错误的 Python 解释器，它就无法在索引路径下找到对应的库文件。
+    
+- **详细操作**：
+    
+    1. 在 VS Code 中按下 `Ctrl + Shift + P`，输入 `Python: Select Interpreter`。
+        
+    2. 选择 **“Enter interpreter path...”**，手动指定到：`C:\WorkStation\_Environments\anaconda\envs\fluid\python.exe`。
+        
+- **最终状态**：实现了“观测”与“存在”的统一。编辑器现在的“视线”完全对准了 `fluid` 动力舱，代码补全与报错提示恢复正常。
+    
+
+### 4. 持久化运行：实现“开机即激活”的低熵状态
+
+- **物理现象**：每次开终端都要手动敲 `conda activate`，浪费精力。
+    
+- **底层逻辑**：通过 `conda init`，Conda 会将自身的初始化代码写入 PowerShell 的启动配置文件。配合 VS Code 的工作区设置，可以实现环境的自动注入。
+    
+- **详细操作**：
+    
+    1. 执行 `& "路径\conda.exe" init powershell`（注意使用 `&` 调用符）。
+        
+    2. 在 VS Code 中确认 `.vscode/settings.json` 已记录 `python.defaultInterpreterPath`。
+        
+- **最终状态**：进入 `Galinstan_Controller` 目录并开启终端时，系统会自动识别并切换至 `(fluid)` 环境。你不再需要手动管理环境切换，精力损耗降至最低。
+    
+
 # python项目实验环境搭建流程篇
 
 ---

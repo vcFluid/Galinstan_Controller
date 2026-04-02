@@ -2,6 +2,12 @@ Project: Galinstan_Controller
 ========================================
 ├── .gitattributes
 ├── .gitignore
+├── .obsidian
+│   ├── app.json
+│   ├── appearance.json
+│   ├── core-plugins.json
+│   └── workspace.json
+├── Map_to_Aim
 ├── My_LEARNING_LOG.md
 ├── README.md
 ├── _attachments
@@ -21,9 +27,19 @@ Project: Galinstan_Controller
 │           └── VideoCap.exe
 ├── project_map.py
 ├── src  # 核心代码库：所有 核心代码逻辑 的集合
-│   ├── _old_code
+│   ├── _old_code  # 历史代码：存放旧版本代码以备查阅
+│   │   ├── 00opence_install_test.py
+│   │   ├── 01Camera_Initialization.py
+│   │   ├── 020PictureSave_error_error_error.py
+│   │   ├── 021Readimage_Calculate.py
+│   │   ├── 022Readimagee_Calculate.py
+│   │   ├── 023Reading_Calculation.py
+│   │   ├── 024Reading_Calculation.py
+│   │   ├── 123.py
+│   │   └── Calcul_Code_test.py
 │   ├── analysis
 │   ├── control  # 控制逻辑:PID 计算与指令生成
 │   ├── embedded
 │   └── vision  # 视觉模块：负责液滴识别、轨迹追踪
 └── tests
+    └── 0_test_env.py
