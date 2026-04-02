@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# 忽略src_for_myself文件夹，里面存放了我个人的测试代码和数据，不适合公开
+src_for_myself/
+
 # 忽略 Obsidian 的个人笔记文件夹，保护隐私
 /.obsidian
 .obsidian/workspace.json
