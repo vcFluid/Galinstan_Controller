@@ -10,6 +10,7 @@ class GalinstanTracker: #声明一个名为 GalinstanTracker 的类，[负责跟
         self.history = deque(maxlen=buffer_sec * fps)
         self.origin = None # 参考点 (x0, y0)
         self.alpha = 0.1   # 初始标定系数 mm/pixel
+        self.last_pos = None # 用于记录上一帧位置，实现 ROI
 
     # 双向队列是指一种数据结构，允许在两端进行高效的插入和删除操作。
     # 在这个代码中，
@@ -34,65 +35,66 @@ class GalinstanTracker: #声明一个名为 GalinstanTracker 的类，[负责跟
 
 
     def process_frame(self, frame):
-    # 1. 预处理：灰度 + 模糊（减阻）
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+        if frame is None: return None
+        
+        # --- 步骤 1: 确定搜索区域 (ROI) ---
+        # 如果有上一帧位置，我们只看局部；如果没有，看全图
+        h, w = frame.shape[:2]
+        roi_size = 150 # 搜索框大小
+        
+        if self.last_pos is not None:
+            x_s = max(0, int(self.last_pos[0] - roi_size//2))
+            y_s = max(0, int(self.last_pos[1] - roi_size//2))
+            roi_img = frame[y_s:y_s+roi_size, x_s:x_s+roi_size]
+        else:
+            roi_img = frame
+            x_s, y_s = 0, 0
 
-        # 我们定义了一个名为 process_frame 的方法，用于处理输入的图像帧 frame。这个方法的主要功能是预处理图像，提取液滴，并计算质心位置。
-        # 之所以叫方法而非函数，是因为它是定义在类 GalinstanTracker 中的，属于这个类的一个成员函数。方法通常需要通过类的实例来调用，而函数则可以独立存在。
+        # --- 步骤 2: 精细化预处理 ---
+        gray = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
+        # 增加对比度：让灰色的阴影变白，黑色的球更黑
+        # 强制将灰度 > 100 的区域全部视为背景（针对白纸黑球模型）
+        _, thresh = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
 
-        # 其中，gray 是将输入的彩色图像 frame 转换为灰度图像的结果。
-        # cv2.cvtColor 是 OpenCV 中的一个函数，用于颜色空间转换，cv2.COLOR_BGR2GRAY 是一个参数，表示将 BGR 彩色图像转换为灰度图像。
-        # blurred 是对灰度图像 gray 进行高斯模糊处理的结果。
-        # cv2.GaussianBlur 是 OpenCV 中的一个函数，用于对图像进行高斯模糊处理，(7, 7) 是高斯核的大小，0 表示根据核大小自动计算标准差。
-        # 参数取决于实际情况，通常需要根据图像的噪声水平和液滴的大小进行调整。
-        # 较大的核可以更有效地去除噪声，但可能会模糊掉细节；较小的核则保留更多细节，但可能无法完全去除噪声。
-        # 建议在实际应用中尝试不同的参数组合，以找到最佳的预处理效果。
+        # --- 步骤 3: 形态学切断 (腐蚀) ---
+        # 使用 3x3 核进行腐蚀，切断与阴影的微弱连接
+        kernel = np.ones((3, 3), np.uint8)
+        mask = cv2.erode(thresh, kernel, iterations=1)
+        mask = cv2.dilate(mask, kernel, iterations=1) # 再补回来
 
-    # 2. 提取液滴：二值化 + 闭运算（确保连通性）
-        _, mask = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        # --- 步骤 4: 轮廓筛选 (面积 + 圆度) ---
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        best_cnt = None
+        min_error = float('inf')
+        
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if 50 < area < 5000: # 根据你的球大小调整
+                # 进阶筛选：计算“圆度”，阴影通常是不规则的
+                perimeter = cv2.arcLength(cnt, True)
+                if perimeter == 0: continue
+                circularity = 4 * np.pi * area / (perimeter * perimeter)
+                
+                # 圆度越接近 1 越像球，阴影的圆度通常很低
+                if circularity > 0.6: 
+                    # 如果有多个，选面积最接近预期的或离上一帧最近的
+                    best_cnt = cnt
+                    break
 
-        # 二值化是将图像转换为只有两种颜色（通常是黑和白）的过程。
-        # 在这个代码中，cv2.threshold 函数用于对模糊后的图像 blurred 进行二值化处理。
-        # 参数 50 是阈值，255 是最大值，cv2.THRESH_BINARY_INV 表示反二值化，即将像素值大于阈值的部分设置为 0（黑色），小于或等于阈值的部分设置为 255（白色）。
-        # 这样可以突出液滴的区域。
-
-        # 闭运算是一种形态学操作，用于填充图像中的小孔或连接相邻的对象。
-        # 在这个代码中，cv2.morphologyEx 函数用于对二值化后的图像 mask 进行闭运算处理。
-        # kernel 是一个 5x5 的矩形结构元素，用于定义闭运算的形状和大小。
-        # cv2.MORPH_CLOSE 是闭运算的标志，表示先进行膨胀操作再进行腐蚀操作，以确保液滴区域的连通性。
-        # 参数取决于实际情况，通常需要根据液滴的大小和图像的分辨率进行调整。
-        # 较大的核可以更有效地连接相邻的液滴，但可能会连接不相关的区域；较小的核则保留更多细节，但可能无法完全连接液滴。
-        # 建议在实际应用中尝试不同的参数组合，以找到最佳的提取效果。
-
-    # 3. 计算质心（矩方法）
-        M = cv2.moments(mask)
-        if M["m00"] > 50: # 过滤噪声点
-            cX = M["m10"] / M["m00"]
-            cY = M["m01"] / M["m00"]
-            
-            # 初始化参考点
-            if self.origin is None:
-                self.origin = (cX, cY)
-            
-            current_pos = [cX, cY]
-            self.history.append(current_pos)
-            return current_pos
+        # --- 步骤 5: 坐标还原 ---
+        if best_cnt is not None:
+            M = cv2.moments(best_cnt)
+            if M["m00"] != 0:
+                # 局部坐标转回全局坐标
+                cX = (M["m10"] / M["m00"]) + x_s
+                cY = (M["m01"] / M["m00"]) + y_s
+                self.last_pos = [cX, cY]
+                return self.last_pos
+        
+        # 如果丢帧了，重置 ROI
+        self.last_pos = None
         return None
-
-        # 我们假设液滴在图像中是一个连通的区域，且质量分布均匀，注意到这里近似化了，所以需要一个合理的修正系数，但暂时先不考虑这个问题。
-        # 故现在可以通过计算这个区域的质心位置来跟踪液滴的运动状态。
-        # 质心是一个物体的几何中心，可以通过图像的矩来计算。
-        # 在这个代码中，cv2.moments 函数用于计算二值化图像 mask 的矩。
-        # M 是一个字典，包含了图像的各种矩信息，其中 m00 是零阶矩，m10 和 m01 分别是一阶矩。
-        # 通过计算 cX 和 cY，可以得到液滴的质心坐标。
-        # 过滤噪声点是为了避免将图像中的小噪声误认为是液滴。通过检查 m00 的值是否大于 50，可以确保只有足够大的区域才被认为是有效的液滴。
-        # 初始化参考点是为了在第一次检测到液滴时设置一个基准位置，后续的坐标将相对于这个参考点进行计算。
-        # current_pos 是当前帧中液滴的质心坐标，将其添加到历史队列 self.history 中，以便后续计算速度和加速度。
-        # 返回 current_pos 作为当前帧中液滴的位置，如果没有检测到有效的液滴，则返回 None。
-
 
     def get_focus_score(self, frame):
         """为未来 XYZ 运动预留：计算拉普拉斯方差作为对焦评价"""
