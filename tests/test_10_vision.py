@@ -1,67 +1,86 @@
 import cv2
 import sys
+import time
+from collections import deque
 from src.drivers.camera_check import get_available_cameras 
 from src.vision.tracker import GalinstanTracker 
 
+def save_video_stream(buffer, suffix, fps=30):
+    """
+    通用保存函数，支持彩色和灰度流
+    """
+    if not buffer: return
+    
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    filename = f"cap_{timestamp}_{suffix}.avi"
+    
+    h, w = buffer[0].shape[:2]
+    # 判断是否为灰度图（2维），若是则需转换或指定颜色空间
+    is_color = len(buffer[0].shape) == 3
+    
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(filename, fourcc, fps, (w, h), is_color)
+    
+    for f in buffer:
+        # VideoWriter 在 Windows 下通常期望 BGR 格式
+        # 如果是灰度图，我们在此处进行一次逻辑转换
+        write_f = f if is_color else cv2.cvtColor(f, cv2.COLOR_GRAY2BGR)
+        out.write(write_f)
+    
+    out.release()
+    print(f"✅ 已保存: {filename}")
+
 def main():
-    # --- 1. 硬件探测与交互 ---
+    # --- 1. 初始化参数 ---
+    fps = 30
+    buf_len = fps * 4
+    # 建立三路同步缓冲区
+    raw_buf = deque(maxlen=buf_len)
+    pre_buf = deque(maxlen=buf_len)
+    msk_buf = deque(maxlen=buf_len)
+
+    # ... (之前的摄像头初始化代码) ...
     indices = get_available_cameras()
-    if not indices:
-        print("❌ 错误：未检测到任何可用摄像头。")
-        return
-
-    print(f"✅ 检测到以下摄像头索引: {indices}")
-    
-    if len(indices) == 1:
-        selected_idx = indices[0]
-    else:
-        try:
-            user_input = input(f"请输入索引 {indices} (直接回车默认 {indices[0]}): ").strip()
-            selected_idx = int(user_input) if user_input else indices[0]
-        except ValueError:
-            selected_idx = indices[0]
-
-    # --- 2. 初始化环境 ---
-    # 修正：使用用户选择的 selected_idx，并加入 DSHOW 后端提高 Windows 兼容性
+    selected_idx = indices[0] # 简化演示，实际请保留交互逻辑
     cap = cv2.VideoCapture(selected_idx, cv2.CAP_DSHOW)
-    
-    # 初始化“在岗裁判”
-    referee = GalinstanTracker(buffer_sec=4, fps=30) 
-    
-    print(f"--- 视觉追踪系统在索引 {selected_idx} 启动 ---")
-    
-    while True:
-        # --- 3. 物理数据采集 ---
-        ret, frame = cap.read()
-        
-        # 🛡️ 物理防线：确保上游水源（数据流）未断
-        if not ret or frame is None:
-            print("⚠️ 警告：丢失帧数据，正在重试...")
-            continue 
+    referee = GalinstanTracker(buffer_sec=4, fps=fps)
 
-        # --- 4. 视觉处理逻辑 ---
-        pos = referee.process_frame(frame)
-        
+    print("--- 多路同步追踪系统启动 | [s] 保存全部流 | [q] 退出 ---")
+
+    while True:
+        ret, frame = cap.read()
+        if not ret: continue
+
+        # --- 2. 剥离执行管线以获取中间值 ---
+        # 我们手动调用内部方法，以获取要保存的 debug 图像
+        processed = referee._preprocess(frame, debug=True)
+        mask = referee._segment(processed, debug=True)
+        pos = referee._find_blob(mask)
+
+        # --- 3. 同步压入缓存 ---
+        raw_buf.append(frame.copy())      # 原始色彩流
+        pre_buf.append(processed.copy())  # 预处理灰度流
+        msk_buf.append(mask.copy())       # 二值化掩模流
+
+        # --- 4. 实时反馈 ---
+        display_frame = frame.copy()
         if pos is not None:
-            x, y = pos
-            # 实时输出，方便溯源
-            print(f"检测到质心: X={x:.2f}, Y={y:.2f}")
-            # 绘制视觉反馈
-            cv2.circle(frame, (int(x), int(y)), 6, (0, 0, 255), -1)
-            cv2.putText(frame, f"({int(x)},{int(y)})", (int(x)+10, int(y)-10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-        
-        # --- 5. 交互与渲染 ---
-        cv2.imshow("Galinstan Tracking (Press 'q' to quit)", frame)
-        
-        # 仅保留一个 waitKey，保持 1ms 监听频率
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.circle(display_frame, (int(pos[0]), int(pos[1])), 6, (0, 0, 255), -1)
+        cv2.imshow("Main_Tracking", display_frame)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('s'):
+            # 一次按下，三路齐发
+            print("\n🚀 正在同步导出多路实验数据...")
+            save_video_stream(list(raw_buf), "1_raw", fps)
+            save_video_stream(list(pre_buf), "2_pre", fps)
+            save_video_stream(list(msk_buf), "3_msk", fps)
+            print("✨ 数据持久化完成。\n")
+        elif key == ord('q'):
             break
 
-    # --- 6. 停机解构 ---
     cap.release()
     cv2.destroyAllWindows()
-    print("--- 系统已安全关闭 ---")
 
 if __name__ == "__main__":
     main()
