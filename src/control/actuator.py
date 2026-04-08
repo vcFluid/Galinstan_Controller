@@ -21,7 +21,7 @@ class SerialTransmitter:
     """
     物理层：负责将指令映射为串口电信号 
     """
-    def __init__(self, port='COM3', baudrate=115200):
+    def __init__(self, port='COM5', baudrate=115200):
         self.ser = None
         try:
             # 尝试建立物理链路

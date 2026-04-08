@@ -11,7 +11,7 @@ from src.drivers.camera_check import get_available_cameras
 # --- 静态配置参数 ---
 TARGET_X = 320.0        # 目标 X 坐标 (假设图像宽度 640)
 FPS = 30                # 设定频率
-COM_PORT = 'COM3'       # 你的串口
+COM_PORT = 'COM5'       # 你的串口
 MAX_V = 5.0             # 逻辑上限电压
 
 TARGET_X = 320.0 
@@ -35,7 +35,7 @@ def main():
     print("正在尝试唤醒视觉传感器...")
     
     # 尝试直接使用默认后端打开 0 号摄像头（通常是笔记本自带或第一个 USB 摄像头）
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     
     # 如果 0 号打不开，尝试 1 号
     if not cap.isOpened():

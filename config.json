@@ -1,0 +1,8 @@
+{
+    "Kp": 0.4, "Ki": 0.01, "Kd": 0.1,
+    "TARGET_X": 320.0,
+    "Critical_V": 1.2,
+    "vis_thresh_C": 6,
+    "vis_kernel_size": 7,
+    "vis_min_area": 300
+}
