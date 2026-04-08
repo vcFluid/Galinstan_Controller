@@ -7,6 +7,9 @@ from src.vision.tracker import GalinstanTracker
 from src.analysis.Brain import PhysicsBrain
 from src.control.actuator import HardwareController, SerialTransmitter
 from src.drivers.camera_check import get_available_cameras
+import datetime
+import os
+
 
 # --- 静态配置参数 ---
 TARGET_X = 320.0        # 目标 X 坐标 (假设图像宽度 640)
@@ -16,9 +19,36 @@ MAX_V = 5.0             # 逻辑上限电压
 
 TARGET_X = 320.0 
 
+# --- 配置录制参数 ---
+RECORD_DURATION = 4  # 秒
+record_frames_limit = FPS * RECORD_DURATION
+recording_active = False
+frame_counter = 0
+video_writers = []
+
+def start_recording(frame_shape):
+    global recording_active, frame_counter, video_writers, TARGET_X
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder = f"data/captures_{timestamp}"
+    os.makedirs(folder, exist_ok=True)
+    
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    names = ["1_Pre", "2_Mask", "3_Blob", "4_Console"]
+    
+    video_writers = []
+    for name in names:
+        path = os.path.join(folder, f"{name}.avi")
+        # 注意：Mask 窗口是单通道，需转为三通道或指定颜色空间
+        vw = cv2.VideoWriter(path, fourcc, FPS, (frame_shape[1], frame_shape[0]))
+        video_writers.append(vw)
+    
+    recording_active = True
+    frame_counter = 0
+    print(f"\n🔴 开始录制瞬态数据至: {folder}")
+
 def main():
     # --- 核心修复点 ---
-    global TARGET_X  
+    global recording_active, frame_counter, video_writers, TARGET_X  
     
     try:
         transmitter = SerialTransmitter(port=COM_PORT, baudrate=115200)
@@ -115,6 +145,36 @@ def main():
                 TARGET_X = 450.0 if TARGET_X == 150.0 else 150.0
                 brain.update_target(TARGET_X)
 
+            # 捕捉 S 键启动录制
+            if key == ord('s') and not recording_active:
+                start_recording(frame.shape)
+                # 同时保存当前时刻的一组高清快照 (JPG)
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                cv2.imwrite(f"data/snap_{timestamp}_1.jpg", tracker.debug_frames["preprocessed"])
+                cv2.imwrite(f"data/snap_{timestamp}_2.jpg", tracker.debug_frames["mask"])
+                cv2.imwrite(f"data/snap_{timestamp}_3.jpg", tracker.debug_frames["blob"])
+                cv2.imwrite(f"data/snap_{timestamp}_4.jpg", frame) # Console 帧
+
+            if recording_active:
+                # 准备四路数据
+                # 技巧：cv2.cvtColor 将灰度图转为 BGR 才能写入彩色视频流
+                f1 = cv2.cvtColor(tracker.debug_frames["preprocessed"], cv2.COLOR_GRAY2BGR)
+                f2 = cv2.cvtColor(tracker.debug_frames["mask"], cv2.COLOR_GRAY2BGR)
+                f3 = tracker.debug_frames["blob"]
+                f4 = frame # 已经带有 UI 覆盖层的最终画面
+                
+                for writer, f in zip(video_writers, [f1, f2, f3, f4]):
+                    writer.write(f)
+                    
+                frame_counter += 1
+                if frame_counter >= record_frames_limit:
+                    recording_active = False
+                    for w in video_writers: w.release()
+                    print("\n✅ 4s 瞬态捕捉完成。")
+
+                pass
+
+
     except KeyboardInterrupt:
         print("\n检测到用户中断...")
     finally:
@@ -125,6 +185,8 @@ def main():
             transmitter.close()
         cap.release()
         cv2.destroyAllWindows()
+
+        
 
 if __name__ == "__main__":
     main()
