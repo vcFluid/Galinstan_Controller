@@ -128,7 +128,7 @@ class GalinstanTracker:
         thresh = cv2.adaptiveThreshold(
             gray_img, 255, 
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY_INV, 11, self.params["C"] 
+            cv2.THRESH_BINARY_INV, 121, self.params["C"] 
         )
         
         # 2. 接入动态形态学核大小

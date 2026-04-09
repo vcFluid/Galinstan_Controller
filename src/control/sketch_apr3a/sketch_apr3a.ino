@@ -1,74 +1,85 @@
-"""
---- Galinstan 执行器固件 ---
-目的:
-1. 接收来自上位机的指令，解析出 DIR 和 PWM 参数。
-2. 根据 DIR 参数控制电机的转向（正转或反转），根据 PWM 参数控制电机的转速（通过改变电压大小）。
-3. 将当前的 DIR 和 PWM 参数通过串口回传给上位机，以便在绘图器中实时可视化液滴的运动状态。
-指令格式:
-上位机发送的指令格式为 "DIR:x,PWM:y\n"，其中 x 是 0 或 1，表示转向；y 是 0-255 的整数，表示 PWM 占空比（电压大小）。例如 "DIR:1,PWM:128\n" 表示正转，PWM 占空比为 50%。
-回传格式:
-Arduino 在执行完指令后，会通过串口发送回 "Direction:300,PWM_Voltage:128\n" 这样的字符串，其中 Direction 的值是 DIR 参数放大了300倍（为了在绘图器中区分两条线），PWM_Voltage 的值是 PWM 参数的实际数值。
-上位机可以解析这个回传字符串，提取出当前的 DIR 和 PWM 参数，并在绘图器中实时更新液滴的运动状态。 
-"""
+/*
+--- Galinstan 准一维控制执行器固件 (v2.0) ---
+物理架构:
+- D5 (PWM) -> L298N ENA  (控制场强梯度)
+- D4 (DO)  -> L298N IN1  (控制极性层 A)
+- D7 (DO)  -> L298N IN2  (控制极性层 B)
 
-// 定义物理引脚 (根据实际连线修改)
-const int DIR_PIN = 4;   // 决定正负极反转的数字引脚 (连接继电器或电机驱动的 DIR)
-const int PWM_PIN = 5;   // 决定电压大小的 PWM 引脚 (连接 ENA)
+指令协议: "DIR:x,PWM:y\n" (x=0/1, y=0-255)
+回传协议: "Direction:300,PWM_Voltage:128\n" (用于上位机时序数据分析)
+*/
 
-String inputString = "";         // 用于缓存接收到的信件片段
-bool stringComplete = false;     // 标记一封信是否接收完毕 (检测到 '\n')
+// --- 物理引脚定义映射 ---
+const int IN1_PIN = 4;   // 极性逻辑 A 
+const int IN2_PIN = 7;   // 极性逻辑 B (差分互补端)
+const int ENA_PIN = 5;   // 驱动器使能端 (PWM)
+
+String inputString = "";         // 串口数据流缓存
+bool stringComplete = false;     // 指令帧结束标志
 
 void setup() {
-  Serial.begin(115200);          // 与 Python 端保持完全一致的通讯速率
+  Serial.begin(115200);          // 必须与 Python 端的波特率绝对对齐
   
-  pinMode(DIR_PIN, OUTPUT);
-  pinMode(PWM_PIN, OUTPUT);
+  // 注册物理输出通道
+  pinMode(IN1_PIN, OUTPUT);
+  pinMode(IN2_PIN, OUTPUT);
+  pinMode(ENA_PIN, OUTPUT);
   
-  // 初始状态清零，防止一上电液滴就乱跑
-  digitalWrite(DIR_PIN, LOW);
-  analogWrite(PWM_PIN, 0);       
+  // 初始化系统为最低能态 (全量断电，防止上电抖动)
+  digitalWrite(IN1_PIN, LOW);
+  digitalWrite(IN2_PIN, LOW);
+  analogWrite(ENA_PIN, 0);
 }
 
 void loop() {
-  // 如果收到了一条完整的指令
+  // 检查是否在中断中捕获到了完整的指令帧
   if (stringComplete) {
     parseAndExecute(inputString);
-    
-    // 清空缓存，准备迎接下一条指令
-    inputString = "";
-    stringComplete = false;
+    inputString = "";            // 释放缓存
+    stringComplete = false;      // 重置锁存器
   }
 }
 
-// 串口中断事件：只要有数据从 USB 传过来，就会自动触发这个函数
+// 硬件级串口中断：异步捕获数据流
 void serialEvent() {
   while (Serial.available()) {
-    char inChar = (char)Serial.read(); // 一个个字符读取
-    inputString += inChar;             // 拼接到字符串中
-    
-    // 如果读到了换行符，说明上位机的一条指令发送完毕
+    char inChar = (char)Serial.read();
+    inputString += inChar;
+    // 遇到换行符，判定为一帧指令结束
     if (inChar == '\n') {
       stringComplete = true;
     }
   }
 }
 
-// 解析指令并驱动物理界面的核心函数
+// 核心控制律：解析语义并转化为物理场
 void parseAndExecute(String cmd) {
   int dirIndex = cmd.indexOf("DIR:");
   int pwmIndex = cmd.indexOf("PWM:");
   
+  // 如果指令格式合法
   if (dirIndex != -1 && pwmIndex != -1) {
+    // 1. 提取指令参量
     int dirValue = cmd.substring(dirIndex + 4, cmd.indexOf(',')).toInt();
     int pwmValue = cmd.substring(pwmIndex + 4).toInt();
     
+    // 2. 边界条件约束 (防止溢出导致寄存器错乱)
     pwmValue = constrain(pwmValue, 0, 255);
     
-    digitalWrite(DIR_PIN, dirValue == 1 ? HIGH : LOW);
-    analogWrite(PWM_PIN, pwmValue); 
+    // 3. 注入物理量：建立差分电场
+    if (dirValue == 1) {
+      digitalWrite(IN1_PIN, HIGH);
+      digitalWrite(IN2_PIN, LOW);   // 电流路径 A -> B
+    } else {
+      digitalWrite(IN1_PIN, LOW);
+      digitalWrite(IN2_PIN, HIGH);  // 电流路径 B -> A
+    }
     
-    // --- 新增可视化回传逻辑 ---
-    // 为了在绘图器中区分两条线，我们将 DIR 放大到 300
+    // 4. 释放动力
+    analogWrite(ENA_PIN, pwmValue); 
+    
+    // 5. 遥测回传：构建闭环数据资产
+    // 将 DIR 映射至 300，是为了在串口绘图器中避免与 PWM (0-255) 曲线重叠
     Serial.print("Direction:");
     Serial.print(dirValue * 300); 
     Serial.print(",");

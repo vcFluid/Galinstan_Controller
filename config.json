@@ -3,8 +3,8 @@
     "Ki": 0.01,
     "Kd": 0.1,
     "TARGET_X": 320.0,
-    "Critical_V": 1.2,
-    "vis_thresh_C": 7,
-    "vis_kernel_size": 3,
-    "vis_min_area": 50
+    "Critical_V": 5.3,
+    "vis_thresh_C": 24,
+    "vis_kernel_size": 2,
+    "vis_min_area": 0
 }

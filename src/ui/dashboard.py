@@ -74,9 +74,9 @@ col1, col2 = st.columns(2) # Streamlit 的 st.columns() 函数用于创建多列
 with col1:
     st.subheader("👁️ 视觉处理参数 (Tracker)")
     # 使用 .get() 方法：即使旧版 config.json 缺少这些键值，前端也不会崩溃报错
-    new_C = st.slider("阈值灵敏度 (C) - 抵抗光照扰动", 2, 20, current_cfg.get("vis_thresh_C", 6))
-    new_K = st.slider("形态学核大小 (Kernel) - 抹除物理杂质", 3, 15, current_cfg.get("vis_kernel_size", 7), step=2)
-    new_area = st.slider("液滴面积下限 (Min Area) - 质量守恒过滤", 50, 5000, current_cfg.get("vis_min_area", 300))
+    new_C = st.slider("阈值灵敏度 (C) - 抵抗光照扰动", 0, 50, current_cfg.get("vis_thresh_C", 6))
+    new_K = st.slider("形态学核大小 (Kernel) - 抹除物理杂质", 0, 15, current_cfg.get("vis_kernel_size", 7), step=2)
+    new_area = st.slider("液滴面积下限 (Min Area) - 质量守恒过滤", 0, 5000, current_cfg.get("vis_min_area", 300))
     # st.slider() 函数的参数说明：
     # 第一个参数是滑动条的标签，第二个和第三个参数分别是滑动条的最小值和最大值，第四个参数是滑动条的初始值，这里使用 current_cfg.get() 方法从当前配置中获取对应的参数值，如果 config.json 中缺少这些键值，则使用默认值（例如 6、7、300）。step 参数用于指定滑动条的步长，例如 kernel 的步长为 2，确保用户只能选择奇数值。
     # 详情可以搜索关键词 "Streamlit st.slider" 来了解更多关于 st.slider() 函数的用法和参数选项。
@@ -89,7 +89,7 @@ with col2:
     
     st.subheader("📏 物理边界条件")
     new_target = st.slider("目标位置坐标 (TARGET_X)", 50.0, 600.0, current_cfg.get("TARGET_X", 320.0), 10.0)
-    new_critical = st.slider("临界启动电压 (Critical_V)", 0.0, 3.0, current_cfg.get("Critical_V", 1.2), 0.1)
+    new_critical = st.slider("临界启动电压 (Critical_V)", 0.0, 10.0, current_cfg.get("Critical_V", 1.2), 0.1)
 
 # --- 3. 状态对比与指令下发 ---
 # 汇聚所有维度的状态张量
