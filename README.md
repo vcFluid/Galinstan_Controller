@@ -1,9 +1,9 @@
 # Galinstan_Controller: 借助视觉反馈的液态金属控制平台
 
 > **“将连续的物理流场离散化为数字信号，再将逻辑决策还原为物理界面的定向运动。”**
-> 本项目利用改装的 3D 打印平台与计算机视觉，构建了一个针对 NaOH 溶液中液态金属（Galinstan）电毛细效应（Electrocapillarity）的软硬闭环控制系统。
-> 在 B 站 UP 主 [大鱼DIY] 的 3D 打印机开源项目基础上，本团队根据需求删繁就简，进行了独创。
-> 原创跳转链接：[大鱼DIY 空间](https://space.bilibili.com/488684813/upload/video)
+> - 本项目利用改装的 3D 打印平台与计算机视觉，构建了一个针对 NaOH 溶液中液态金属（Galinstan）电毛细效应（Electrocapillarity）的闭环控制系统。
+> - 在 B 站 UP 主 [大鱼DIY] 的 3D 打印机开源项目基础上，本团队根据需求删繁就简，进行了独创。
+> - 原创跳转链接：[大鱼DIY 空间](https://space.bilibili.com/488684813/upload/video)
 
 ---
 
