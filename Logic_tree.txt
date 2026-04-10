@@ -8,7 +8,7 @@ Project: Galinstan_Controller
 │   ├── core-plugins.json
 │   └── workspace.json
 ├── Map_to_Aim
-├── README
+├── README.md
 ├── _attachments
 ├── config.json
 ├── drivers  # 硬件驱动库：屏蔽底层通讯细节
@@ -50,17 +50,21 @@ Project: Galinstan_Controller
 │   │       ├── tracker_v0.2.py
 │   │       └── tracker_v0.5.py
 │   ├── analysis
-│   │   └── Brain.py
+│   │   ├── Brain.py
+│   │   └── README
 │   ├── control  # 控制逻辑:PID 计算与指令生成
 │   │   ├── actuator.py
 │   │   └── sketch_apr3a
 │   │       └── sketch_apr3a.ino
 │   ├── drivers
 │   │   └── camera_check.py
+│   ├── main-old.py
 │   ├── main.py
 │   ├── ui
-│   │   └── dashboard.py
+│   │   ├── dashboard.py
+│   │   └── dashboard_1-5.py
 │   └── vision  # 视觉模块：负责液滴识别、轨迹追踪
+│       ├── tracker-old.py
 │       └── tracker.py
 └── tests
     ├── test_00_env.py

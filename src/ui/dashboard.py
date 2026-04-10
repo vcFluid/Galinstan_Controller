@@ -56,17 +56,17 @@ st.set_page_config(page_title="Galinstan 控制中枢", layout="wide")
 st.title("🔬 Galinstan 动力学参数寻优平台")
 st.markdown("调整以下物理与视觉参数，系统将实时热更新底层的 `config.json` 协议。")
 
-"""
-st.xxx() 是 Streamlit 提供的一个函数，用于设置页面的配置参数。
-在这个程序中，
-st.set_page_config() 被用来设置页面的标题和布局方式。
-st.title() 用于在页面上显示一个大标题，st.markdown() 用于显示一段说明文本。
-st.markdown() 支持 Markdown 语法，可以用来格式化文本内容，使得界面更美观和易读。
-st.slider() 用于创建一个滑动条组件，允许用户在指定的范围内选择一个数值，这些数值将被用来更新 config.json 文件中的参数，实现实时热更新。
-st.subheader() 用于在页面上显示一个小标题，帮助用户更好地理解不同参数的分类和作用。
-st.columns() 用于创建多列布局，在这个程序中创建了两个等宽的列，分别用于放置视觉处理参数和动力学控制律的 PID 参数，通过这种布局方式，用户可以更清晰地看到不同类别的参数，并且在调整时不会混淆。
-详情可以搜索关键词 "Streamlit st.set_page_config"、"Streamlit st.title" 和 "Streamlit st.markdown" 来了解更多关于这些 Streamlit 函数的用法和功能。
-"""
+
+#st.xxx() 是 Streamlit 提供的一个函数，用于设置页面的配置参数。
+#在这个程序中，
+#st.set_page_config() 被用来设置页面的标题和布局方式。
+#st.title() 用于在页面上显示一个大标题，st.markdown() 用于显示一段说明文本。
+#st.markdown() 支持 Markdown 语法，可以用来格式化文本内容，使得界面更美观和易读。
+#st.slider() 用于创建一个滑动条组件，允许用户在指定的范围内选择一个数值，这些数值将被用来更新 config.json 文件中的参数，实现实时热更新。
+#st.subheader() 用于在页面上显示一个小标题，帮助用户更好地理解不同参数的分类和作用。
+#st.columns() 用于创建多列布局，在这个程序中创建了两个等宽的列，分别用于放置视觉处理参数和动力学控制律的 PID 参数，通过这种布局方式，用户可以更清晰地看到不同类别的参数，并且在调整时不会混淆。
+#详情可以搜索关键词 "Streamlit st.set_page_config"、"Streamlit st.title" 和 "Streamlit st.markdown" 来了解更多关于这些 Streamlit 函数的用法和功能。
+
 
 # 加载当前状态
 current_cfg = load_config() # 调用 load_config() 函数加载当前的参数配置，如果 config.json 文件存在且格式正确，则返回其中的参数数据；如果文件不存在或格式错误，则返回默认的参数矩阵。这个 current_cfg 变量将用于在前端界面上显示当前的参数值，并作为滑动条的初始值。
