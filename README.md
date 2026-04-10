@@ -10,13 +10,13 @@
 ## 1. 核心思想与物理基础
 * **工程架构**：采用感知-分析-执行（Sense-Think-Act）解耦架构，实现底层硬件与高层控制律的物理隔离。
 * **开发原则**：本人希望通过本项目，最大化的学习模块化开发范式，理解实验、代码、理论之间的关系，目前收获颇丰，详情见
-* - ①代码及代码注释[src]()
+* - ①代码及代码注释[src](https://github.com/vcFluid/Galinstan_Controller/tree/main/src)
   - ②[收获与反思](https://github.com/vcFluid/Galinstan_Controller/blob/main/README.md#6-%E6%94%B6%E8%8E%B7%E4%B8%8E%E5%8F%8D%E6%80%9D)
 
 ## 2. 系统架构 (System Architecture)
 系统由四个解耦的模块构成，通过 `config.json` 协议与UI界面，实现可交互的通讯：
 
-* **[Sense] 视觉捕捉层 (`src/vision`)**：利用 OpenCV 库。引入 CLAHE 增强与双边滤波，将液滴降维映射为状态空间的坐标矩阵 $(x, y, t)$。
+* **[Sense] 视觉捕捉层 (`src/vision`)**：利用 OpenCV 库。引入传统方案- CLAHE 增强与双边滤波，将液滴降维映射为状态空间的坐标矩阵 $(x, y, t)$。
 * **[注：]**由于传统的视觉方案容易捕捉到光线阴影而干扰识别，目前正在尝试新方案 - 通过提取液态金属的形态特征（特征提取工程），过滤环境噪音，进行精确视觉识别。
 * **[Think] 动力学分析 (`src/analysis`)**：物理公式离散层面。$e(t) = x_{target} - x(t)$，利用PID 算子将位移偏差，逆运算为理想电压指令。
 * **[Act] 物理执行层 (`src/control`)**：将数字逻辑映射为物理电极的 PWM 电信号，包含安全限幅与死区补偿逻辑。
@@ -31,11 +31,11 @@
 ├── config.json             # 实时参数储存"容器"
 ├── /drivers                # 硬件接口封装：camera_check
 ├── /src                    # 核心逻辑源码
-│   ├── vision/             # tracker.py: 动态追踪与滤波算法
+│   ├── vision/             # tracker.py: 动态追踪
 │   ├── analysis/           # Brain.py: 电驱动力与粘性阻力演算模型
 │   ├── control/            # actuator.py: 串口通信与执行器映射
-│   └── ui/                 # dashboard.py: Streamlit 交互式参数寻优平台
-└── /tests                  # 离线仿真与模块测试
+│   └── ui/                 # dashboard.py: Streamlit 交互
+└── /tests                  # 离线仿真
     └── test_offline_replay.py # 数字孪生回放系统：支持实验数据回溯
 ```
 
