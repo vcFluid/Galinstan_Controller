@@ -10,8 +10,8 @@
 ## 1. 核心思想与物理基础
 * **工程架构**：采用感知-分析-执行（Sense-Think-Act）解耦架构，实现底层硬件与高层控制律的物理隔离。
 * **开发原则**：本人希望通过本项目，最大化的学习模块化开发范式，理解实验、代码、理论之间的关系，目前收获颇丰，详情见
-* - ①代码及代码注释
-  - ②收获与反思 [6. 收获与反思](https://github.com/vcFluid/Galinstan_Controller/blob/main/README.md#6-%E6%94%B6%E8%8E%B7%E4%B8%8E%E5%8F%8D%E6%80%9D)
+* - ①代码及代码注释[src]()
+  - ②[收获与反思](https://github.com/vcFluid/Galinstan_Controller/blob/main/README.md#6-%E6%94%B6%E8%8E%B7%E4%B8%8E%E5%8F%8D%E6%80%9D)
 
 ## 2. 系统架构 (System Architecture)
 系统由四个解耦的模块构成，通过 `config.json` 协议与UI界面，实现可交互的通讯：
