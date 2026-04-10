@@ -1,71 +1,94 @@
+"""
+--- Galinstan 视觉伺服感知引擎 (v2.0 CSRT 版) ---
+核心逻辑已由“全局图像分割”更替为“局部特征追踪 (CSRT)”。
+外部调用者只需在进入主循环前调用一次 calibrate() 即可，
+原有 process_frame() 的 API 契约保持不变。
+"""
+
 import cv2
-import sys
+import numpy as np
+from collections import deque
 
-# 【替换你的视频路径】
-VIDEO_PATH = r"C:\WorkStation\linshi\Galinstan_Controller\data\captures_20260409_193516\1_pre.avi"
+class GalinstanTracker:
+    def __init__(self, buffer_sec=4, fps=30):
+        # 1. 状态寄存器 (维持原样，供物理预测使用)
+        self.history = deque(maxlen=buffer_sec * fps)
+        self.last_pos = None
 
-cap = cv2.VideoCapture(VIDEO_PATH)
-ret, frame = cap.read()
-if not ret:
-    print("无法读取视频")
-    sys.exit()
+        # 2. 核心：初始化 CSRT 追踪器引擎
+        try:
+            self.tracker = cv2.TrackerCSRT_create()
+        except AttributeError:
+            self.tracker = cv2.legacy.TrackerCSRT_create()
 
-frame = cv2.resize(frame, (640, 480))
+        self.is_initialized = False
 
-# 创建 CSRT 追踪器 (抗形变、抗复杂背景最强的算法之一)
-# 兼容性处理：不同版本的 OpenCV 调用方式略有不同
-try:
-    tracker = cv2.TrackerCSRT_create()
-except AttributeError:
-    tracker = cv2.legacy.TrackerCSRT_create()
+        # 3. 兼容性填充：防报错机制
+        # 即使现在不需要调参，也要保留这个字典，防止 UI 端调用时崩溃
+        self.params = {"C": 0, "kernel": 0, "min_area": 0} 
 
-print("[系统提示] 请用鼠标框选液滴（尽量贴合液滴边缘），按 SPACE 或 ENTER 确认")
-bbox = cv2.selectROI("Vision Tracking", frame, showCrosshair=True, fromCenter=False)
-cv2.destroyWindow("Vision Tracking")
+    def update_params(self, new_params):
+        """
+        兼容原有的参数更新接口。
+        由于 CSRT 算法无需手动调参，此处直接吞掉传进来的参数，做静默处理。
+        """
+        pass 
 
-# 如果没有框选有效区域，直接退出
-if bbox[2] == 0 or bbox[3] == 0:
-    print("未选择有效区域，退出程序。")
-    sys.exit()
+    def calibrate(self, first_frame):
+        """
+        物理目标锁定（标定）。
+        这相当于给导弹的导引头注入目标特征，必须在主循环前调用。
+        """
+        print("[系统提示] 开启视网膜标定。请框选液态金属，按 SPACE 确认。")
+        bbox = cv2.selectROI("Calibration: Select Galinstan", first_frame, showCrosshair=True, fromCenter=False)
+        cv2.destroyWindow("Calibration: Select Galinstan")
 
-# 初始化追踪器，将第一帧和目标框喂给算法
-tracker.init(frame, bbox)
+        if bbox[2] == 0 or bbox[3] == 0:
+            print("[致命错误] 未选择有效物理区域。")
+            return False
 
-print("\n[引擎启动] 正在全自动追踪... 按 'q' 键退出")
+        # 启动追踪器
+        self.tracker.init(first_frame, bbox)
+        self.is_initialized = True
+        return True
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("视频播放完毕。")
-        break
-        
-    frame = cv2.resize(frame, (640, 480))
+    def process_frame(self, frame, debug=False):
+        """
+        唯一的公共感知接口：输入光场，输出质心坐标 [x, y]。
+        """
+        if frame is None or not self.is_initialized:
+            return None
 
-    # 核心：更新追踪器，算法会自动寻找最相似的特征块
-    success, bbox = tracker.update(frame)
+        # --- 核心感知逻辑 ---
+        # 算法会自动寻找与标定阶段最相似的 HOG 特征块
+        success, bbox = self.tracker.update(frame)
 
-    if success:
-        # 提取边界框坐标
-        x, y, w, h = [int(v) for v in bbox]
-        # 计算物理质心
-        cX = x + w // 2
-        cY = y + h // 2
+        debug_canvas = frame.copy() if debug else None
 
-        # 绘制可视反馈
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
-        cv2.putText(frame, f"LOCKED: [{cX}, {cY}]", (cX - 40, cY - 20), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    else:
-        # 如果目标由于剧烈变形或遮挡丢失
-        cv2.putText(frame, "LOST TARGET", (100, 80), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+        if success:
+            # 提取边界框坐标并计算几何中心
+            x, y, w, h = [int(v) for v in bbox]
+            cX = x + w // 2
+            cY = y + h // 2
+            pos = [cX, cY]
 
-    cv2.imshow("Vision Tracking", frame)
+            # 更新物理状态记忆
+            self.history.append(pos)
+            self.last_pos = pos
 
-    # 控制播放速度 (延迟 30ms)
-    if cv2.waitKey(30) & 0xFF == ord('q'):
-        break
+            # 调试渲染
+            if debug:
+                cv2.rectangle(debug_canvas, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.circle(debug_canvas, (cX, cY), 4, (0, 0, 255), -1)
+                cv2.putText(debug_canvas, f"LOCKED: [{cX}, {cY}]", (cX - 40, cY - 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.imshow("Debug_Vision_Tracking", debug_canvas)
 
-cap.release()
-cv2.destroyAllWindows()
+            return pos
+        else:
+            # 目标逃逸或被严重遮挡
+            if debug:
+                cv2.putText(debug_canvas, "LOST TARGET", (100, 80),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                cv2.imshow("Debug_Vision_Tracking", debug_canvas)
+            return None
